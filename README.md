@@ -10,7 +10,7 @@ The easiest way to use the library is via **jsDelivr**, which mirrors this GitHu
 
 Add this to your `<head>`:
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/bc/css-patterns-nice/textures.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/bc/css_patterns/textures.css">
 ```
 
 ## 🛠 How to Use
