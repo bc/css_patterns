@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Textures — one color in, a whole surface out</title>
+<link rel="stylesheet" href="textures.css">
+<style>
+  :root {
+    --c: #5b8def;                       /* the ONE input color for the whole page */
+    color-scheme: light;
+    --page: color-mix(in oklab, var(--c) 3%, white);
+    --line: color-mix(in oklab, var(--c) 14%, #e7e7ee);
+    --muted: color-mix(in oklab, var(--c) 20%, #6b6b78);
+    --ink: color-mix(in oklab, var(--c) 40%, #0b0b16);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--page); color: var(--ink);
+    font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  code, pre, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 20px; }
+  h1, h2, h3 { margin: 0; line-height: 1.05; letter-spacing: -.02em; }
+  p { margin: 0; }
+
+  /* ---------- control bar ---------- */
+  .bar {
+    position: sticky; top: 0; z-index: 50;
+    background: color-mix(in oklab, white 82%, transparent);
+    backdrop-filter: blur(14px) saturate(1.4);
+    border-bottom: 1px solid var(--line);
+  }
+  .bar .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding-block: 10px; }
+  .brand { font-weight: 800; letter-spacing: -.02em; font-size: 17px; margin-right: auto; display: flex; gap: 8px; align-items: center; }
+  .brand i { width: 18px; height: 18px; border-radius: 6px; background: var(--c); display: inline-block; }
+  .ctl { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+  .ctl select, .ctl input[type=text] {
+    font: 600 13px ui-monospace, monospace; color: var(--ink); text-transform: none; letter-spacing: 0;
+    padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: white;
+  }
+  .ctl input[type=text] { width: 86px; }
+  .ctl input[type=color] { width: 34px; height: 30px; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: white; cursor: pointer; }
+  .ctl input[type=range] { width: 90px; accent-color: var(--c); }
+  .ctl label.chk { display: flex; gap: 6px; align-items: center; cursor: pointer; text-transform: none; letter-spacing: 0; font-size: 13px; }
+  .swatches { display: flex; flex-wrap: wrap; gap: 5px; }
+  .swatches button {
+    width: 22px; height: 22px; border-radius: 50%; border: 2px solid white; cursor: pointer; padding: 0;
+    box-shadow: 0 0 0 1px var(--line); transition: transform .12s;
+  }
+  .swatches button:hover { transform: scale(1.2); }
+  .swatches button[aria-pressed=true] { box-shadow: 0 0 0 2px var(--ink); }
+
+  /* ---------- hero ---------- */
+  .hero { margin-top: 22px; border-radius: 28px; overflow: hidden; border: 1px solid var(--line); }
+  .hero .inner { padding: clamp(36px, 8vw, 96px) clamp(22px, 5vw, 64px); display: grid; gap: 22px; max-width: 900px; }
+  .eyebrow { font: 700 12px ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; opacity: .7; }
+  .hero h1 { font-size: clamp(42px, 8vw, 92px); font-weight: 900; letter-spacing: -.045em; }
+  .hero p.lead { font-size: clamp(17px, 2vw, 22px); max-width: 640px; color: color-mix(in oklab, var(--ink) 80%, transparent); }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 10px; }
+  .btn {
+    font: 700 14px/1 inherit; font-family: inherit; padding: 13px 20px; border-radius: 999px; border: 0; cursor: pointer;
+    background: var(--ink); color: white; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn.ghost { background: white; color: var(--ink); box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--ink) 25%, transparent); }
+
+  /* ---------- sections ---------- */
+  section { padding-top: 76px; }
+  .sec-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 10px 30px; margin-bottom: 24px; }
+  .sec-head h2 { font-size: clamp(30px, 4.5vw, 52px); font-weight: 900; letter-spacing: -.04em; }
+  .sec-head p { max-width: 520px; color: var(--muted); }
+  .kicker { font: 700 12px ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .nav { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+  .nav a { color: var(--ink); text-decoration: none; font-weight: 700; font-size: 13px; padding: 7px 13px; border-radius: 999px; background: white; box-shadow: inset 0 0 0 1px var(--line); }
+  .nav a:hover { background: var(--ink); color: white; }
+
+  /* ---------- how it works ---------- */
+  .how { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 860px) { .how { grid-template-columns: 1fr; } }
+  .panel { background: white; border: 1px solid var(--line); border-radius: 20px; padding: 22px; }
+  .panel h3 { font-size: 20px; margin-bottom: 12px; letter-spacing: -.02em; }
+  .chips { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
+  .chip { border-radius: 14px; padding: 36px 12px 10px; font: 600 12px ui-monospace, monospace; border: 1px solid rgb(0 0 0 / .06); }
+  .chip b { display: block; font-size: 13px; }
+  pre { margin: 0; background: #14141f; color: #dfe2f5; padding: 16px 18px; border-radius: 14px; overflow-x: auto; font-size: 13px; line-height: 1.6; }
+  pre .k { color: #9ab4ff; } pre .s { color: #ffc98a; } pre .c { color: #7d819d; }
+  .tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+  .tiers div { border-radius: 14px; min-height: 84px; padding: 12px; font-weight: 800; font-size: 18px; }
+
+  /* ---------- gallery cards ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+  .card {
+    min-height: 150px; border-radius: 18px; border: 0; padding: 14px; text-align: left; cursor: pointer;
+    display: flex; flex-direction: column; justify-content: space-between;
+    font: inherit; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .06);
+    transition: transform .16s ease, box-shadow .16s ease;
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: inset 0 0 0 1px rgb(0 0 0 / .06), 0 14px 30px -14px color-mix(in oklab, var(--ink) 45%, transparent); }
+  .card .aa { font-size: 46px; font-weight: 900; letter-spacing: -.05em; line-height: 1; }
+  .card .tag {
+    align-self: flex-start; font: 600 11px ui-monospace, monospace; padding: 4px 8px; border-radius: 7px;
+    background: rgb(255 255 255 / .82); color: var(--ink); backdrop-filter: blur(4px);
+  }
+  .card.copied .tag { background: var(--ink); color: white; }
+  .count { font: 700 13px ui-monospace, monospace; color: var(--muted); }
+  .grid.wide { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+  .grid.wide .card { min-height: 190px; }
+
+  /* ---------- palette matrix ---------- */
+  .matrix { display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px; }
+  @media (max-width: 900px) { .matrix { grid-template-columns: repeat(4, 1fr); } }
+  .matrix div { aspect-ratio: 1; border-radius: 16px; display: grid; place-items: center; font-weight: 900; font-size: 22px; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .06); }
+
+  /* ---------- in-use examples ---------- */
+  .ex { display: grid; gap: 16px; }
+  .ex-3 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .ex-4 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+  .ex-2 { grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); }
+  .box { border-radius: 22px; padding: 26px; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .06); overflow: hidden; }
+  .price .name { font: 700 12px ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; opacity: .7; }
+  .price .amt { font-size: 64px; font-weight: 900; letter-spacing: -.05em; line-height: 1; margin: 12px 0 4px; }
+  .price .amt small { font-size: 18px; font-weight: 700; letter-spacing: 0; opacity: .6; }
+  .price ul { list-style: none; padding: 0; margin: 18px 0 22px; display: grid; gap: 8px; font-weight: 600; }
+  .price li::before { content: "✓"; font-weight: 900; margin-right: 8px; }
+  .stat .n { font-size: clamp(44px, 6vw, 72px); font-weight: 900; letter-spacing: -.05em; line-height: 1; }
+  .stat .l { font-weight: 700; margin-top: 8px; opacity: .75; }
+  .profile { display: flex; gap: 18px; align-items: center; }
+  .avatar { width: 72px; height: 72px; border-radius: 50%; background: var(--ink); color: white; display: grid; place-items: center; font-weight: 900; font-size: 26px; flex: none; }
+  .profile h3 { font-size: 28px; font-weight: 900; letter-spacing: -.03em; }
+  .quote blockquote { margin: 0; font-size: clamp(22px, 2.6vw, 32px); font-weight: 800; letter-spacing: -.03em; line-height: 1.2; }
+  .quote cite { display: block; margin-top: 16px; font: 600 13px ui-monospace, monospace; opacity: .7; font-style: normal; }
+  .banner { border-radius: 16px; padding: 16px 20px; display: flex; gap: 14px; align-items: center; font-weight: 700; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .06); }
+  .banner .ic { width: 34px; height: 34px; border-radius: 10px; background: var(--ink); color: white; display: grid; place-items: center; font-weight: 900; flex: none; }
+  .stack { display: grid; gap: 12px; }
+  .cta { padding: clamp(34px, 6vw, 70px); border-radius: 28px; display: flex; flex-wrap: wrap; gap: 22px; align-items: center; justify-content: space-between; border: 1px solid rgb(0 0 0 / .06); }
+  .cta h2 { font-size: clamp(34px, 5vw, 64px); font-weight: 900; letter-spacing: -.045em; max-width: 640px; }
+  .tagrow { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tag-pill { font-weight: 700; font-size: 13px; padding: 8px 14px; border-radius: 999px; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .07); }
+  .kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); border-radius: 22px; overflow: hidden; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .06); }
+  .kpi { align-self: start; }
+  .kpi > div { padding: 24px; }
+  .kpi .n { font-size: 40px; font-weight: 900; letter-spacing: -.04em; line-height: 1.1; }
+  .kpi .l { font-weight: 600; font-size: 13px; opacity: .7; }
+
+  footer { margin-top: 90px; padding: 40px 0 60px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+  .credits { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--line); display: grid; gap: 20px; }
+  .credits h3 { font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
+  .credits ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+  .credits li { display: flex; gap: 8px; align-items: baseline; }
+  .credits li b { color: var(--ink); font-weight: 600; }
+  .credits a { color: var(--muted); text-decoration: underline; text-underline-offset: 2px; }
+  .credits a:hover { color: var(--ink); }
+  .toast {
+    position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px);
+    background: var(--ink); color: white; font: 600 13px ui-monospace, monospace; padding: 10px 16px; border-radius: 12px;
+    opacity: 0; pointer-events: none; transition: .2s; z-index: 99; max-width: 92vw;
+  }
+  .toast.on { opacity: 1; transform: translate(-50%, 0); }
+</style>
+</head>
+<body>
+
+<!-- ============================ CONTROL BAR ============================ -->
+<header class="bar">
+  <div class="wrap">
+    <div class="brand"><i></i>textures.css</div>
+    <div class="ctl">Color
+      <input type="color" id="picker" value="#5b8def" aria-label="Pick a color">
+      <input type="text" id="hex" value="#5b8def" spellcheck="false" aria-label="Hex color">
+    </div>
+    <div class="swatches" id="swatches" role="group" aria-label="Color presets"></div>
+    <div class="ctl">Hue shift <input type="range" id="hue" min="0" max="120" value="35" aria-label="Accent hue shift"></div>
+    <div class="ctl">Tier
+      <select id="tier">
+        <option value="">native</option><option>subtle</option><option>medium</option><option>bold</option>
+      </select>
+    </div>
+    <div class="ctl">Scale
+      <select id="size"><option value=".7">sm</option><option value="1" selected>md</option><option value="1.5">lg</option><option value="2">xl</option></select>
+    </div>
+    <label class="ctl chk"><input type="checkbox" id="rainbow"> rainbow</label>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ============================ HERO ============================ -->
+<div class="hero tex tex-aurora tier-medium" id="hero">
+  <div class="inner">
+    <div class="eyebrow">A CSS texture library · 0 JS · 1 variable</div>
+    <h1>One color in.<br>A whole surface out.</h1>
+    <p class="lead">Set <code>--c</code> and every texture derives its own soft background, a hue-shifted accent, and a matching ink color — light enough to put <b>heavy type</b> right on top.</p>
+    <div class="pill-row">
+      <a class="btn" href="#subtle">Browse textures ↓</a>
+      <a class="btn ghost" href="#how">How it works</a>
+    </div>
+  </div>
+</div>
+<nav class="nav" aria-label="Sections">
+  <a href="#how">How it works</a><a href="#subtle">Subtle</a><a href="#medium">Medium</a><a href="#bold">Bold</a>
+  <a href="#blends">Blends</a><a href="#combos">Combos</a><a href="#palette">Palette</a><a href="#examples">In use</a>
+</nav>
+
+<!-- ============================ HOW IT WORKS ============================ -->
+<section id="how">
+  <div class="sec-head">
+    <div><div class="kicker">01 · The system</div><h2>Pick a color. Pick a pattern.</h2></div>
+    <p>Everything is derived from <code>--c</code> with <code>color-mix()</code> and relative color syntax — no per-color CSS.</p>
+  </div>
+  <div class="how">
+    <div class="panel">
+      <h3>What one color becomes</h3>
+      <div class="chips tex" id="chips">
+        <div class="chip" style="background: var(--c)"><b style="color:white">--c</b><span style="color:white">your input</span></div>
+        <div class="chip" style="background: var(--p)"><b>--p</b>primary bg</div>
+        <div class="chip" style="background: var(--s)"><b>--s</b>accent</div>
+        <div class="chip" style="background: var(--s-hi)"><b>--s-hi</b>strong accent</div>
+        <div class="chip" style="background: var(--sc)"><b>--sc</b>same-hue accent</div>
+        <div class="chip" style="background: var(--s3)"><b>--s3</b>2× shifted</div>
+        <div class="chip" style="background: var(--ink); color: white"><b>--ink</b>text color</div>
+      </div>
+      <h3 style="margin-top:22px">Three strengths</h3>
+      <div class="tiers">
+        <div class="tex tex-grid tier-subtle">subtle</div>
+        <div class="tex tex-stripes tier-medium">medium</div>
+        <div class="tex tex-bands tier-bold">bold</div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>Use it</h3>
+<pre><span class="c">&lt;!-- 1. link the file --&gt;</span>
+&lt;link rel="stylesheet" href="textures.css"&gt;
+
+<span class="c">&lt;!-- 2. pattern + strength + one color --&gt;</span>
+&lt;div class="<span class="s">tex tex-hex tier-medium c-rose</span>"&gt;
+  &lt;h2&gt;Big bold text&lt;/h2&gt;
+&lt;/div&gt;
+
+<span class="c">&lt;!-- any hex works too --&gt;</span>
+&lt;div class="<span class="s">tex tex-aurora</span>" style="<span class="k">--c</span>:#0d9488"&gt;…&lt;/div&gt;
+
+<span class="c">&lt;!-- stack a mask pattern on a blend --&gt;</span>
+&lt;div class="<span class="s">tex tex-aurora tex-plus</span>"&gt;…&lt;/div&gt;
+
+<span class="c">/* knobs */</span>
+<span class="k">--c</span>     <span class="c">/* the one color              */</span>
+<span class="k">--hue</span>   <span class="c">/* accent hue shift, 0 = mono */</span>
+<span class="k">--k</span>     <span class="c">/* scale: .size-sm / lg / xl  */</span>
+<span class="k">--p --s</span> <span class="c">/* override derived colors    */</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ GALLERIES (filled by JS) ============================ -->
+<section id="subtle">
+  <div class="sec-head">
+    <div><div class="kicker">02 · Subtle <span class="count" id="n-subtle"></span></div><h2>Barely there.</h2></div>
+    <p>Fine hairlines, tiny dots, paper grain. Safe behind paragraphs of text. <em>Click any card to copy its classes.</em></p>
+  </div>
+  <div class="grid" id="g-subtle"></div>
+</section>
+
+<section id="medium">
+  <div class="sec-head">
+    <div><div class="kicker">03 · Medium <span class="count" id="n-medium"></span></div><h2>Clearly patterned.</h2></div>
+    <p>Stripes, checks, honeycomb, scales. The all-rounder for cards, headers and tiles.</p>
+  </div>
+  <div class="grid" id="g-medium"></div>
+</section>
+
+<section id="bold">
+  <div class="sec-head">
+    <div><div class="kicker">04 · Bold <span class="count" id="n-bold"></span></div><h2>Make a statement.</h2></div>
+    <p>Big shapes and a stronger accent — still pale enough for black, heavy, oversized type.</p>
+  </div>
+  <div class="grid" id="g-bold"></div>
+</section>
+
+<section id="blends">
+  <div class="sec-head">
+    <div><div class="kicker">05 · Blends <span class="count" id="n-blends"></span></div><h2>Gradients × patterns × grain.</h2></div>
+    <p>Mesh gradients, aurora glows, film grain via <code>background-blend-mode</code>, fades that dissolve a pattern into the background.</p>
+  </div>
+  <div class="grid wide" id="g-blends"></div>
+</section>
+
+<section id="combos">
+  <div class="sec-head">
+    <div><div class="kicker">06 · Combos <span class="count" id="n-combos"></span></div><h2>Stack them.</h2></div>
+    <p>Mask patterns (plus, hex, stitch…) live on <code>::before</code>, so they layer over any gradient or blend.</p>
+  </div>
+  <div class="grid wide" id="g-combos"></div>
+</section>
+
+<!-- ============================ PALETTE ============================ -->
+<section id="palette">
+  <div class="sec-head">
+    <div><div class="kicker">07 · Palette</div><h2>Same class. Sixteen colors.</h2></div>
+    <p>Each tile below is identical markup — only <code>--c</code> changes. Top: <code>tex-hex tier-medium</code>. Bottom: <code>tex-aurora</code>.</p>
+  </div>
+  <div class="matrix" id="m1"></div>
+  <div class="matrix" id="m2" style="margin-top:10px"></div>
+</section>
+
+<!-- ============================ IN USE ============================ -->
+<section id="examples">
+  <div class="sec-head">
+    <div><div class="kicker">08 · In use</div><h2>On real components.</h2></div>
+    <p>Everything here is a single <code>.tex</code> class combo. Text stays crisp because the surfaces stay light.</p>
+  </div>
+
+  <div class="ex ex-3">
+    <div class="box price tex tex-dots tier-subtle c-sky">
+      <div class="name">Starter</div><div class="amt">$9<small>/mo</small></div>
+      <ul><li>1 project</li><li>Community support</li><li>Basic analytics</li></ul>
+      <button class="btn">Get started</button>
+    </div>
+    <div class="box price tex tex-hex tier-medium c-violet">
+      <div class="name">Pro · popular</div><div class="amt">$29<small>/mo</small></div>
+      <ul><li>Unlimited projects</li><li>Priority support</li><li>Advanced analytics</li></ul>
+      <button class="btn">Go Pro</button>
+    </div>
+    <div class="box price tex tex-cubes tier-bold c-amber">
+      <div class="name">Team</div><div class="amt">$79<small>/mo</small></div>
+      <ul><li>Everything in Pro</li><li>SSO &amp; audit log</li><li>Dedicated manager</li></ul>
+      <button class="btn">Talk to us</button>
+    </div>
+  </div>
+
+  <div class="ex ex-4" style="margin-top:16px">
+    <div class="box stat tex tex-grid-fade c-teal"><div class="n">98.4%</div><div class="l">Uptime, last 90 days</div></div>
+    <div class="box stat tex tex-polka tier-medium c-rose"><div class="n">12.7k</div><div class="l">New signups</div></div>
+    <div class="box stat tex tex-sunrise c-orange"><div class="n">4.9★</div><div class="l">Average rating</div></div>
+    <div class="box stat tex tex-checks tier-subtle c-lime"><div class="n">+38%</div><div class="l">Quarter over quarter</div></div>
+  </div>
+
+  <div class="ex ex-2" style="margin-top:16px">
+    <div class="box profile tex tex-mesh c-indigo">
+      <div class="avatar">BC</div>
+      <div><h3>Ben Cohn</h3><p style="font-weight:600;opacity:.75">Engineering · phData</p>
+        <div class="tagrow" style="margin-top:10px"><span class="tag-pill tex tex-stitch tier-subtle c-indigo">Data</span><span class="tag-pill tex tex-ripple tier-subtle c-indigo">Design systems</span></div></div>
+    </div>
+    <div class="box quote tex tex-paper tex-plus c-amber">
+      <blockquote>“Good texture is the whisper behind the shout.”</blockquote>
+      <cite>— a design proverb, probably</cite>
+    </div>
+  </div>
+
+  <div class="ex ex-2" style="margin-top:16px">
+    <div class="stack">
+      <div class="banner tex tex-stitch tier-medium c-sky"><span class="ic">i</span>Heads up — a new version is available.</div>
+      <div class="banner tex tex-hairline tier-medium c-green"><span class="ic">✓</span>Deployment finished successfully.</div>
+      <div class="banner tex tex-gingham tier-medium c-amber"><span class="ic">!</span>Your trial ends in 3 days.</div>
+      <div class="banner tex tex-chevron tier-medium c-rose"><span class="ic">×</span>Payment failed — update your card.</div>
+    </div>
+    <div class="kpi tex tex-graph tier-subtle c-emerald">
+      <div><div class="n">$48k</div><div class="l">Revenue</div></div>
+      <div><div class="n">1,204</div><div class="l">Orders</div></div>
+      <div><div class="n">3.2%</div><div class="l">Conversion</div></div>
+      <div><div class="n">87</div><div class="l">NPS</div></div>
+    </div>
+  </div>
+
+  <div class="cta tex tex-holo tex-lattice c-fuchsia" style="margin-top:16px">
+    <h2>Ship something beautiful today.</h2>
+    <div class="pill-row"><a class="btn" href="#how">Copy the CSS</a><a class="btn ghost" href="#subtle">Back to gallery</a></div>
+  </div>
+</section>
+
+</main>
+
+<footer class="wrap">
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 40px;">
+    <div>
+      <p>Built with plain CSS — <code style="color:var(--ink)">color-mix()</code>, relative color syntax, conic/radial gradients, SVG masks and <code style="color:var(--ink)">background-blend-mode</code>.</p>
+      <p style="margin-top:12px">Designed to be lightweight, accessible, and fully programmatic. Just set <code style="color:var(--ink)">--c</code> and let the system handle the rest.</p>
+    </div>
+    <div class="credits">
+      <h3>Inspirations & Licensing</h3>
+      <ul>
+        <li><b>Lea Verou</b> <a href="https://projects.verou.me/css3patterns/" target="_blank">css3patterns</a> — MIT License.</li>
+        <li><b>Temani Afif</b> <a href="https://css-pattern.com/" target="_blank">css-pattern.com</a> — MIT License.</li>
+        <li><b>CSS-Tricks</b> <a href="https://css-tricks.com/grainy-gradients/" target="_blank">Grainy Gradients</a> — Permissive reuse.</li>
+        <li><b>MagicPattern</b> <a href="https://www.magicpattern.design/" target="_blank">Backgrounds</a> — Visual inspiration.</li>
+      </ul>
+    </div>
+  </div>
+</footer>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ---------------- data ---------------- */
+const PALETTE = [
+  ['blue','#5b8def'],['indigo','#6366f1'],['violet','#8b5cf6'],['fuchsia','#d946ef'],
+  ['rose','#f43f5e'],['red','#ef4444'],['orange','#f97316'],['amber','#f59e0b'],
+  ['yellow','#eab308'],['lime','#84cc16'],['green','#22c55e'],['emerald','#10b981'],
+  ['teal','#14b8a6'],['cyan','#06b6d4'],['sky','#0ea5e9'],['slate','#64748b'],
+];
+const SETS = {
+  subtle: ['dots','dots-stagger','grid','graph','ruled','hairline','crosshatch','plus','checker','linen','stitch','ripple','paper', 'dots-tiny', 'pegboard', 'isometric', 'ruled-v', 'notebook', 'dotgrid', 'micro-checker', 'hairline-wide', 'paper-fine', 'paper-coarse', 'x-marks', 'diamonds-mini', 'dashes', 'rain', 'sprinkle', 'corners', 'wiggle', 'sparkle', 'rings-mini', 'tri-mini', 'micro-dots', 'scanline', 'static', 'silk', 'etched', 'carbon'],
+  medium: ['stripes','pinstripe','checks','gingham','polka','zigzag','bricks','hex','scales','waves','confetti','lattice', 'awning', 'plaid', 'ticking', 'fan', 'ripples-corner', 'polka-duo', 'rings', 'bullets', 'twin-lines', 'basketweave', 'flowers', 'leaves', 'argyle', 'bloom', 'hearts', 'crosses', 'bubbles', 'frames', 'ocean', 'zigline', 'squiggle', 'arrows', 'asterisks', 'drops', 'pills', 'circuit', 'prism', 'nest', 'plaid-bold', 'chevron-alt', 'diamond-grid', 'stripe-wave'],
+  bold:   ['bands','board','bullseye','sunburst','polka-xl','swell','chevron','triangles','cubes','stars','tiles','arches', 'curtain', 'deck', 'targets', 'pinwheels', 'dots-xxl', 'candy', 'tweed', 'duo-board', 'duo-bands', 'pie', 'corner-rings', 'domes', 'blobs', 'petals', 'xs', 'crosses-bold', 'lightning', 'hearts-xl', 'hex-xl', 'scales-xl', 'lattice-xl', 'bricks-xl', 'waves-xl', 'confetti-xl', 'plus-xl', 'macro-dots', 'beam', 'monolith', 'orb', 'zigzag-bold', 'circuit-bold'],
+  blends: ['grain','grain-gradient','aurora','mesh','dots-fade','grid-fade','sheen','spotlight','sunrise','dusk','holo','grain-dots','check-fade', 'mesh-grain', 'aurora-dots', 'peach-fade', 'sky', 'horizon', 'stripe-fade', 'radial-burst', 'glass', 'candy-glow', 'neon-grid', 'conic-sweep', 'ribbon', 'dots-glow', 'checker-glow', 'lines-glow', 'hatch-vignette', 'strata', 'rays-fall', 'bokeh', 'sprinkles', 'linen-glow', 'grain-vignette', 'duotone', 'twin-glow', 'iris', 'lava', 'frost', 'tropic', 'stripes-grain', 'grid-mesh'],
+  combos: [
+    ['aurora','plus'],['grain-gradient','hex'],['mesh','stitch'],['dusk','ripple'],
+    ['holo','lattice'],['spotlight','scales'],['sunrise','bricks'],['paper','confetti'],
+    ['mesh-grain','x-marks'],['sky','hearts'],['lava','sparkle'],['frost','bubbles'],
+    ['peach-fade','flowers'],['conic-sweep','asterisks'],['aurora-dots','frames'],['neon-grid','drops'],
+  ],
+};
+const NATIVE_TIER = { blends: 'medium', combos: 'medium' };
+
+/* ---------------- build gallery ---------------- */
+const $ = (s, r = document) => r.querySelector(s);
+const cards = [];
+for (const [key, list] of Object.entries(SETS)) {
+  const host = $('#g-' + key);
+  list.forEach(item => {
+    const names = Array.isArray(item) ? item : [item];
+    const tier = NATIVE_TIER[key] || key;
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = ['card', 'tex', ...names.map(n => 'tex-' + n), 'tier-' + tier].join(' ');
+    el.dataset.native = tier;
+    el.dataset.copy = ['tex', ...names.map(n => 'tex-' + n), 'tier-' + tier].join(' ');
+    el.innerHTML = `<span class="aa">Aa</span><span class="tag">${names.map(n => '.tex-' + n).join(' ')}</span>`;
+    host.appendChild(el);
+    cards.push(el);
+  });
+  $('#n-' + key).textContent = `(${list.length})`;
+}
+// palette matrix
+PALETTE.forEach(([name, hex], i) => {
+  for (const [id, cls] of [['m1', 'tex tex-hex tier-medium'], ['m2', 'tex tex-aurora']]) {
+    const d = document.createElement('div');
+    d.className = cls; d.style.setProperty('--c', hex); d.textContent = 'Aa'; d.title = name + ' ' + hex;
+    $('#' + id).appendChild(d);
+  }
+});
+
+/* ---------------- controls ---------------- */
+const root = document.documentElement;
+const picker = $('#picker'), hex = $('#hex'), sw = $('#swatches');
+function setColor(v) {
+  if (!/^#[0-9a-f]{6}$/i.test(v)) return;
+  root.style.setProperty('--c', v);
+  picker.value = v; hex.value = v;
+  sw.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.hex.toLowerCase() === v.toLowerCase()));
+  applyRainbow();
+}
+PALETTE.forEach(([name, h]) => {
+  const b = document.createElement('button');
+  b.style.background = h; b.dataset.hex = h; b.title = name; b.setAttribute('aria-label', name); b.setAttribute('aria-pressed', 'false');
+  b.onclick = () => setColor(h);
+  sw.appendChild(b);
+});
+picker.oninput = () => setColor(picker.value);
+hex.onchange = () => setColor(hex.value.startsWith('#') ? hex.value : '#' + hex.value);
+$('#hue').oninput = e => root.style.setProperty('--hue', e.target.value);
+$('#size').onchange = e => root.style.setProperty('--k', e.target.value);
+$('#tier').onchange = e => {
+  cards.forEach(c => {
+    c.classList.remove('tier-subtle', 'tier-medium', 'tier-bold');
+    c.classList.add('tier-' + (e.target.value || c.dataset.native));
+  });
+};
+$('#rainbow').onchange = applyRainbow;
+function applyRainbow() {
+  const on = $('#rainbow').checked;
+  cards.forEach((c, i) => on ? c.style.setProperty('--c', PALETTE[(i * 5) % PALETTE.length][1]) : c.style.removeProperty('--c'));
+}
+
+/* ---------------- copy ---------------- */
+const toast = $('#toast'); let tt;
+document.addEventListener('click', e => {
+  const c = e.target.closest('.card'); if (!c) return;
+  const tier = [...c.classList].find(x => x.startsWith('tier-'));
+  const text = c.dataset.copy.replace(/tier-\w+/, tier);
+  const done = () => {
+    c.classList.add('copied'); toast.textContent = 'Copied: ' + text; toast.classList.add('on');
+    clearTimeout(tt); tt = setTimeout(() => { toast.classList.remove('on'); c.classList.remove('copied'); }, 1600);
+  };
+  (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(done, done);
+});
+
+setColor('#5b8def');
+</script>
+</body>
+</html>

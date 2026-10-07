@@ -1,0 +1,842 @@
+/* ==========================================================================
+   textures.css — a color-driven library of light background textures
+   --------------------------------------------------------------------------
+   LICENSING & ATTRIBUTION:
+     • General Logic: MIT License.
+     • Pattern Inspirations:
+       - Lea Verou (css3patterns): MIT License.
+       - Temani Afif (css-pattern.com): MIT License.
+       - CSS-Tricks: Code reuse encouraged.
+     • Note: Some visual concepts are inspired by MagicPattern.design.
+   ========================================================================== */
+
+   Give it ONE color (--c). Everything else is derived:
+     --p      primary   — the soft tinted background       (c mixed into white)
+     --s      secondary — the pattern accent, hue-shifted  (c2 mixed into white)
+     --s-hi   a stronger accent for bold shapes
+     --ink    a dark, on-brand text color to sit on top
+   Pick a PATTERN   : .tex-dots, .tex-hex, .tex-aurora …           (see index.html)
+   Pick a STRENGTH  : .tier-subtle | .tier-medium | .tier-bold
+   Optional         : --hue (accent hue shift, deg; 0 = monochrome)
+                      --k (pattern scale: .size-sm / .size-lg / .size-xl)
+                      .c-blue .c-rose … color presets
+   Override any derived value directly: style="--p:#fff7e6; --s:#ffd9a0".
+
+   NOTES
+     • Mask patterns (plus, hex, scales, waves …) draw on ::before so they can
+       be STACKED on top of a gradient/blend:  class="tex tex-aurora tex-plus".
+     • Needs color-mix() (all evergreen browsers). Hue-shifted accents use
+       relative color syntax and gracefully fall back to a single hue.
+   ========================================================================== */
+
+/* ---------- 1. Color presets (just set --c) ---------- */
+.c-blue    { --c: #5b8def; }
+.c-indigo  { --c: #6366f1; }
+.c-violet  { --c: #8b5cf6; }
+.c-fuchsia { --c: #d946ef; }
+.c-rose    { --c: #f43f5e; }
+.c-red     { --c: #ef4444; }
+.c-orange  { --c: #f97316; }
+.c-amber   { --c: #f59e0b; }
+.c-yellow  { --c: #eab308; }
+.c-lime    { --c: #84cc16; }
+.c-green   { --c: #22c55e; }
+.c-emerald { --c: #10b981; }
+.c-teal    { --c: #14b8a6; }
+.c-cyan    { --c: #06b6d4; }
+.c-sky     { --c: #0ea5e9; }
+.c-slate   { --c: #64748b; }
+
+/* ---------- 2. Strength tiers (work on the element or any ancestor) ---------- */
+.tier-subtle { --p-mix: 10%; --s-mix: 26%; }
+.tier-medium { --p-mix: 16%; --s-mix: 42%; }
+.tier-bold   { --p-mix: 24%; --s-mix: 64%; }
+
+/* ---------- 3. Scale modifiers ---------- */
+.size-sm { --k: .7; }
+.size-lg { --k: 1.5; }
+.size-xl { --k: 2; }
+
+/* ---------- 4. The engine ---------- */
+.tex {
+  /* hue-shifted companions; fall back to the base hue if unsupported */
+  --c2: var(--c, #5b8def);
+  --c3: var(--c, #5b8def);
+
+  --p:      color-mix(in oklab, var(--c,  #5b8def) var(--p-mix, 16%), white);
+  --s:      color-mix(in oklab, var(--c2) var(--s-mix, 42%), white);
+  --sc:     color-mix(in oklab, var(--c,  #5b8def) var(--s-mix, 42%), white);
+  --s3:     color-mix(in oklab, var(--c3) var(--s-mix, 42%), white);
+  --s-hi:   color-mix(in oklab, var(--c2) min(100%, calc(var(--s-mix, 42%) * 1.5)), white);
+  --s-soft: color-mix(in oklab, var(--s) 50%, transparent);
+  --ink:    color-mix(in oklab, var(--c, #5b8def) 45%, #0b0b16);
+
+  --px: calc(1px * var(--k, 1));                 /* scaled hairline  */
+  --u:  calc(var(--ub, 18px) * var(--k, 1));     /* scaled tile unit */
+
+  /* film grain: greyscale fractal noise, meant for background-blend-mode: multiply */
+  --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='.85' intercept='.54'/%3E%3CfeFuncG type='linear' slope='.85' intercept='.54'/%3E%3CfeFuncB type='linear' slope='.85' intercept='.54'/%3E%3CfeFuncA type='linear' slope='0' intercept='1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+
+  position: relative;
+  isolation: isolate;
+  background-color: var(--p);
+  color: var(--ink);
+}
+@supports (color: oklch(from red l c h)) {
+  .tex {
+    --c2: oklch(from var(--c, #5b8def) l c calc(h + var(--hue, 35)));
+    --c3: oklch(from var(--c, #5b8def) l c calc(h + var(--hue, 35) * 2));
+  }
+}
+
+/* ---------- 5. Mask patterns: drawn on ::before, tinted with --s ---------- */
+.tex-plus::before,
+.tex-stitch::before,
+.tex-ripple::before,
+.tex-waves::before,
+.tex-swell::before,
+.tex-bricks::before,
+.tex-hex::before,
+.tex-scales::before,
+.tex-lattice::before,
+.tex-chevron::before,
+.tex-triangles::before,
+.tex-cubes::before,
+.tex-stars::before,
+.tex-tiles::before,
+.tex-arches::before,
+.tex-confetti::before,
+.tex-x-marks::before,
+.tex-diamonds-mini::before,
+.tex-dashes::before,
+.tex-rain::before,
+.tex-sprinkle::before,
+.tex-corners::before,
+.tex-wiggle::before,
+.tex-sparkle::before,
+.tex-rings-mini::before,
+.tex-tri-mini::before,
+.tex-basketweave::before,
+.tex-flowers::before,
+.tex-leaves::before,
+.tex-argyle::before,
+.tex-bloom::before,
+.tex-hearts::before,
+.tex-crosses::before,
+.tex-bubbles::before,
+.tex-frames::before,
+.tex-ocean::before,
+.tex-zigline::before,
+.tex-squiggle::before,
+.tex-arrows::before,
+.tex-asterisks::before,
+.tex-drops::before,
+.tex-pills::before,
+.tex-domes::before,
+.tex-blobs::before,
+.tex-petals::before,
+.tex-xs::before,
+.tex-crosses-bold::before,
+.tex-lightning::before,
+.tex-hex-xl::before,
+.tex-scales-xl::before,
+.tex-lattice-xl::before,
+.tex-bricks-xl::before,
+.tex-waves-xl::before,
+.tex-confetti-xl::before,
+.tex-plus-xl::before,
+.tex-hearts-xl::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: inherit;
+  background: var(--s);
+  -webkit-mask: var(--m) 0 0 / calc(var(--mw) * var(--k, 1)) calc(var(--mh) * var(--k, 1)) repeat;
+          mask: var(--m) 0 0 / calc(var(--mw) * var(--k, 1)) calc(var(--mh) * var(--k, 1)) repeat;
+}
+.tex-plus      { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M12 8v8M8 12h8' fill='none' stroke='%23000' stroke-width='1.4' /%3E%3C/svg%3E");     --mw: 24px; --mh: 24px; }
+.tex-stitch    { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='12' viewBox='0 0 14 12'%3E%3Cpath d='M2 6h7' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");   --mw: 14px; --mh: 12px; }
+.tex-ripple    { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='10' viewBox='0 0 20 10'%3E%3Cpath d='M0 5Q5 0 10 5T20 5' fill='none' stroke='%23000' stroke-width='1.2' /%3E%3C/svg%3E");   --mw: 20px; --mh: 10px; }
+.tex-bricks    { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='20' viewBox='0 0 40 20'%3E%3Cpath d='M0 1H40M0 11H40M10 1V11M30 11V21' fill='none' stroke='%23000' stroke-width='1.5' /%3E%3C/svg%3E");   --mw: 40px; --mh: 20px; }
+.tex-hex       { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='70' viewBox='0 0 60 70'%3E%3Cpath d='M20 0L10 17.5L-10 17.5L-20 0L-10 -17.5L10 -17.5ZM80 0L70 17.5L50 17.5L40 0L50 -17.5L70 -17.5ZM50 17.5L40 35L20 35L10 17.5L20 0L40 0ZM20 35L10 52.5L-10 52.5L-20 35L-10 17.5L10 17.5ZM80 35L70 52.5L50 52.5L40 35L50 17.5L70 17.5ZM50 52.5L40 70L20 70L10 52.5L20 35L40 35ZM20 70L10 87.5L-10 87.5L-20 70L-10 52.5L10 52.5ZM80 70L70 87.5L50 87.5L40 70L50 52.5L70 52.5Z' fill='none' stroke='%23000' stroke-width='1.4' /%3E%3C/svg%3E");      --mw: 60px; --mh: 70px; }
+.tex-scales    { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cpath d='M-20 20A20 20 0 0 1 20 20M20 20A20 20 0 0 1 60 20M0 40A20 20 0 0 1 40 40' fill='none' stroke='%23000' stroke-width='1.6' /%3E%3C/svg%3E");   --mw: 40px; --mh: 40px; }
+.tex-waves     { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='16' viewBox='0 0 40 16'%3E%3Cpath d='M0 8Q10 0 20 8T40 8' fill='none' stroke='%23000' stroke-width='2.4' /%3E%3C/svg%3E");    --mw: 40px; --mh: 16px; }
+.tex-confetti  { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90' viewBox='0 0 90 90'%3E%3Ccircle cx='12' cy='14' r='4.5'/%3E%3Crect x='55' y='12' width='10' height='10' transform='rotate(28 60 17)'/%3E%3Cpath d='M28 58L38 76H18Z'/%3E%3Cpath d='M58 66q4-8 8 0t8 0' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round'/%3E%3Ccircle cx='78' cy='42' r='3'/%3E%3Ccircle cx='16' cy='42' r='6' fill='none' stroke='%23000' stroke-width='2' /%3E%3Cpath d='M44 30v8M40 34h8' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'/%3E%3Crect x='72' y='78' width='6' height='6' transform='rotate(-20 75 81)'/%3E%3C/svg%3E"); --mw: 90px; --mh: 90px; }
+.tex-lattice   { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cpath d='M14 0L28 14L14 28L0 14Z' fill='none' stroke='%23000' stroke-width='1.3' /%3E%3Cpath d='M14 10l4 4-4 4-4-4z'/%3E%3C/svg%3E");  --mw: 28px; --mh: 28px; }
+.tex-swell     { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='32' viewBox='0 0 64 32'%3E%3Cpath d='M0 16Q16 0 32 16T64 16' fill='none' stroke='%23000' stroke-width='9' /%3E%3C/svg%3E");    --mw: 64px; --mh: 32px; }
+.tex-chevron   { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='20' viewBox='0 0 40 20'%3E%3Cpath d='M-2 22L20 2L42 22' fill='none' stroke='%23000' stroke-width='5' stroke-linejoin='miter'/%3E%3C/svg%3E");  --mw: 40px; --mh: 20px; }
+.tex-triangles { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='35' viewBox='0 0 40 35'%3E%3Cpath d='M20 0L40 35H0Z' fill-opacity='.95'/%3E%3Cpath d='M20 0L60 0L40 35ZM-20 0L20 0L0 35Z' fill-opacity='.35'/%3E%3C/svg%3E");--mw: 40px; --mh: 35px; }
+.tex-cubes     { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='35' height='60' viewBox='0 0 35 60'%3E%3Cpath d='M0 -20L17.5 -10L0 0L-17.5 -10Z' fill-opacity='.25'/%3E%3Cpath d='M-17.5 -10L0 0L0 20L-17.5 10Z' fill-opacity='.6'/%3E%3Cpath d='M0 0L17.5 -10L17.5 10L0 20Z' fill-opacity='1'/%3E%3Cpath d='M35 -20L52.5 -10L35 0L17.5 -10Z' fill-opacity='.25'/%3E%3Cpath d='M17.5 -10L35 0L35 20L17.5 10Z' fill-opacity='.6'/%3E%3Cpath d='M35 0L52.5 -10L52.5 10L35 20Z' fill-opacity='1'/%3E%3Cpath d='M0 40L17.5 50L0 60L-17.5 50Z' fill-opacity='.25'/%3E%3Cpath d='M-17.5 50L0 60L0 80L-17.5 70Z' fill-opacity='.6'/%3E%3Cpath d='M0 60L17.5 50L17.5 70L0 80Z' fill-opacity='1'/%3E%3Cpath d='M35 40L52.5 50L35 60L17.5 50Z' fill-opacity='.25'/%3E%3Cpath d='M17.5 50L35 60L35 80L17.5 70Z' fill-opacity='.6'/%3E%3Cpath d='M35 60L52.5 50L52.5 70L35 80Z' fill-opacity='1'/%3E%3Cpath d='M17.5 10L35 20L17.5 30L0 20Z' fill-opacity='.25'/%3E%3Cpath d='M0 20L17.5 30L17.5 50L0 40Z' fill-opacity='.6'/%3E%3Cpath d='M17.5 30L35 20L35 40L17.5 50Z' fill-opacity='1'/%3E%3Cpath d='M17.5 -50L35 -40L17.5 -30L0 -40Z' fill-opacity='.25'/%3E%3Cpath d='M0 -40L17.5 -30L17.5 -10L0 -20Z' fill-opacity='.6'/%3E%3Cpath d='M17.5 -30L35 -40L35 -20L17.5 -10Z' fill-opacity='1'/%3E%3Cpath d='M17.5 70L35 80L17.5 90L0 80Z' fill-opacity='.25'/%3E%3Cpath d='M0 80L17.5 90L17.5 110L0 100Z' fill-opacity='.6'/%3E%3Cpath d='M17.5 90L35 80L35 100L17.5 110Z' fill-opacity='1'/%3E%3C/svg%3E");    --mw: 35px; --mh: 60px; }
+.tex-stars     { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Cpolygon points='22,8 25.53,17.15 35.31,17.67 27.71,23.85 30.23,33.33 22,28 13.77,33.33 16.29,23.85 8.69,17.67 18.47,17.15'/%3E%3C/svg%3E");    --mw: 44px; --mh: 44px; }
+.tex-tiles     { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Crect x='3' y='3' width='26' height='26' rx='7'/%3E%3C/svg%3E");    --mw: 32px; --mh: 32px; }
+.tex-arches    { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='22' viewBox='0 0 44 22'%3E%3Cpath d='M3 22A19 19 0 0 1 41 22M10 22A12 12 0 0 1 34 22M17 22A5 5 0 0 1 27 22' fill='none' stroke='%23000' stroke-width='3.6' /%3E%3C/svg%3E");   --mw: 44px; --mh: 22px; }
+
+/* ==========================================================================
+   SUBTLE — fine, quiet, almost-not-there. Safe behind long text.
+   ========================================================================== */
+.tex-dots {
+  --ub: 16px;
+  background-image: radial-gradient(var(--s) calc(1.3 * var(--px)), transparent calc(1.9 * var(--px)));
+  background-size: var(--u) var(--u);
+}
+.tex-dots-stagger {
+  --ub: 20px;
+  background-image:
+    radial-gradient(var(--s) calc(1.3 * var(--px)), transparent calc(1.9 * var(--px))),
+    radial-gradient(var(--s) calc(1.3 * var(--px)), transparent calc(1.9 * var(--px)));
+  background-size: var(--u) var(--u);
+  background-position: 0 0, calc(var(--u) / 2) calc(var(--u) / 2);
+}
+.tex-grid {
+  --ub: 24px;
+  background-image:
+    linear-gradient(var(--s) var(--px), transparent var(--px)),
+    linear-gradient(90deg, var(--s) var(--px), transparent var(--px));
+  background-size: var(--u) var(--u);
+}
+.tex-graph {
+  --ub: 48px;
+  background-image:
+    linear-gradient(var(--s) var(--px), transparent var(--px)),
+    linear-gradient(90deg, var(--s) var(--px), transparent var(--px)),
+    linear-gradient(var(--s-soft) var(--px), transparent var(--px)),
+    linear-gradient(90deg, var(--s-soft) var(--px), transparent var(--px));
+  background-size:
+    var(--u) var(--u), var(--u) var(--u),
+    calc(var(--u) / 4) calc(var(--u) / 4), calc(var(--u) / 4) calc(var(--u) / 4);
+}
+.tex-ruled {
+  --ub: 26px;
+  background-image: linear-gradient(var(--s) var(--px), transparent var(--px));
+  background-size: 100% var(--u);
+}
+.tex-hairline {
+  --ub: 16px;
+  background-image: repeating-linear-gradient(45deg, var(--s) 0 var(--px), transparent var(--px) calc(var(--u) / 2));
+}
+.tex-crosshatch {
+  --ub: 18px;
+  background-image:
+    repeating-linear-gradient(45deg,  var(--s) 0 var(--px), transparent var(--px) calc(var(--u) / 2)),
+    repeating-linear-gradient(-45deg, var(--s) 0 var(--px), transparent var(--px) calc(var(--u) / 2));
+}
+.tex-checker {
+  --ub: 14px;
+  background-image: conic-gradient(var(--s) 25%, transparent 0 50%, var(--s) 0 75%, transparent 0);
+  background-size: var(--u) var(--u);
+}
+.tex-linen {
+  background-image:
+    repeating-linear-gradient(0deg,  var(--s-soft) 0 var(--px), transparent var(--px) calc(3 * var(--px))),
+    repeating-linear-gradient(90deg, var(--s-soft) 0 var(--px), transparent var(--px) calc(3 * var(--px)));
+}
+.tex-paper {
+  background-image: var(--noise);
+  background-blend-mode: multiply;
+  background-size: 220px 220px;
+}
+
+/* ==========================================================================
+   MEDIUM — clearly patterned, still pale. Great for cards and headers.
+   ========================================================================== */
+.tex-stripes {
+  --ub: 26px;
+  background-image: repeating-linear-gradient(45deg, var(--s) 0 calc(var(--u) / 4), transparent 0 calc(var(--u) / 2));
+}
+.tex-pinstripe {
+  --ub: 14px;
+  background-image: repeating-linear-gradient(90deg, var(--s) 0 calc(2 * var(--px)), transparent 0 var(--u));
+}
+.tex-checks {
+  --ub: 28px;
+  background-image: conic-gradient(var(--s) 25%, transparent 0 50%, var(--s) 0 75%, transparent 0);
+  background-size: var(--u) var(--u);
+}
+.tex-gingham {
+  --ub: 16px;
+  background-image:
+    repeating-linear-gradient(0deg,  var(--s-soft) 0 var(--u), transparent 0 calc(2 * var(--u))),
+    repeating-linear-gradient(90deg, var(--s-soft) 0 var(--u), transparent 0 calc(2 * var(--u)));
+}
+.tex-polka {
+  --ub: 44px;
+  background-image:
+    radial-gradient(var(--s) calc(var(--u) * .13), transparent calc(var(--u) * .14)),
+    radial-gradient(var(--s) calc(var(--u) * .13), transparent calc(var(--u) * .14));
+  background-size: var(--u) var(--u);
+  background-position: 0 0, calc(var(--u) / 2) calc(var(--u) / 2);
+}
+.tex-zigzag {
+  --ub: 18px;
+  background-image:
+    linear-gradient(135deg, var(--s) 25%, transparent 25%),
+    linear-gradient(225deg, var(--s) 25%, transparent 25%),
+    linear-gradient(315deg, var(--s) 25%, transparent 25%),
+    linear-gradient(45deg,  var(--s) 25%, transparent 25%);
+  background-size: calc(2 * var(--u)) calc(2 * var(--u));
+  background-position:
+    calc(var(--u) * -1) 0, calc(var(--u) * -1) 0, 0 0, 0 0;
+}
+/* bricks, hex, scales, waves, confetti, lattice → mask patterns above */
+
+/* ==========================================================================
+   BOLD — big shapes, saturated accent. Use behind a few huge words.
+   ========================================================================== */
+.tex-bands {
+  --ub: 30px;
+  background-image: repeating-linear-gradient(45deg, var(--s) 0 calc(var(--u) / 2), transparent 0 var(--u));
+}
+.tex-board {
+  --ub: 44px;
+  background-image: conic-gradient(var(--s) 25%, transparent 0 50%, var(--s) 0 75%, transparent 0);
+  background-size: var(--u) var(--u);
+}
+.tex-bullseye {
+  --ub: 40px;
+  background-image: repeating-radial-gradient(circle at 50% 50%, var(--s) 0 calc(var(--u) / 4), transparent 0 calc(var(--u) / 2));
+}
+.tex-sunburst {
+  background-image: repeating-conic-gradient(from 0deg at 50% 50%, var(--s) 0 7.5deg, transparent 0 15deg);
+}
+.tex-polka-xl {
+  --ub: 72px;
+  background-image:
+    radial-gradient(var(--s) calc(var(--u) * .24), transparent calc(var(--u) * .25)),
+    radial-gradient(var(--s) calc(var(--u) * .24), transparent calc(var(--u) * .25));
+  background-size: var(--u) var(--u);
+  background-position: 0 0, calc(var(--u) / 2) calc(var(--u) / 2);
+}
+/* swell, chevron, triangles, cubes, stars, tiles, arches → mask patterns above */
+
+/* ==========================================================================
+   BLENDS — gradients × patterns × grain. Layer order = top → bottom.
+   ========================================================================== */
+.tex-grain {
+  background-image: var(--noise);
+  background-blend-mode: multiply;
+  background-size: 220px 220px;
+}
+.tex-grain-gradient {
+  background-image: var(--noise), linear-gradient(135deg, var(--p), var(--s));
+  background-blend-mode: multiply, normal;
+  background-size: 220px 220px, auto;
+}
+.tex-aurora {
+  background-image:
+    var(--noise),
+    radial-gradient(60% 75% at 12% 15%, var(--sc), transparent 70%),
+    radial-gradient(55% 70% at 90% 20%, var(--s), transparent 70%),
+    radial-gradient(70% 70% at 55% 105%, var(--s3), transparent 70%);
+  background-blend-mode: multiply, normal, normal, normal;
+  background-size: 220px 220px, auto, auto, auto;
+}
+.tex-mesh {
+  background-image:
+    radial-gradient(at 0% 0%,     var(--s-hi) 0, transparent 55%),
+    radial-gradient(at 100% 0%,   var(--s3)   0, transparent 55%),
+    radial-gradient(at 100% 100%, var(--s)    0, transparent 55%),
+    radial-gradient(at 0% 100%,   var(--sc)   0, transparent 55%);
+}
+.tex-dots-fade {
+  --ub: 14px;
+  background-image:
+    linear-gradient(180deg, transparent 0%, var(--p) 88%),
+    radial-gradient(var(--s-hi) calc(1.4 * var(--px)), transparent calc(2 * var(--px)));
+  background-size: auto, var(--u) var(--u);
+}
+.tex-grid-fade {
+  --ub: 26px;
+  background-image:
+    radial-gradient(ellipse at 50% 40%, transparent 0%, var(--p) 78%),
+    linear-gradient(var(--s-hi) var(--px), transparent var(--px)),
+    linear-gradient(90deg, var(--s-hi) var(--px), transparent var(--px));
+  background-size: auto, var(--u) var(--u), var(--u) var(--u);
+}
+.tex-sheen {
+  --ub: 28px;
+  background-image:
+    linear-gradient(115deg, transparent 15%, rgb(255 255 255 / .75) 42%, transparent 62%),
+    repeating-linear-gradient(45deg, var(--s) 0 calc(var(--u) / 4), transparent 0 calc(var(--u) / 2));
+}
+.tex-spotlight {
+  --ub: 18px;
+  background-image:
+    radial-gradient(70% 90% at 50% 0%, rgb(255 255 255 / .95), transparent 70%),
+    radial-gradient(var(--s-hi) calc(1.3 * var(--px)), transparent calc(1.9 * var(--px)));
+  background-size: auto, var(--u) var(--u);
+}
+.tex-sunrise {
+  background-image:
+    radial-gradient(circle at 50% 100%, var(--p) 0, var(--p) 12%, transparent 62%),
+    repeating-conic-gradient(from 0deg at 50% 100%, var(--s) 0 6deg, transparent 0 12deg);
+}
+.tex-dusk {
+  --ub: 24px;
+  background-image:
+    linear-gradient(var(--s-soft) var(--px), transparent var(--px)),
+    linear-gradient(180deg, var(--p) 0%, var(--s) 100%);
+  background-size: 100% var(--u), auto;
+}
+.tex-holo {
+  background-image:
+    var(--noise),
+    conic-gradient(from 200deg at 30% 30%, var(--sc), var(--s), var(--s3), var(--sc));
+  background-blend-mode: multiply, normal;
+  background-size: 220px 220px, auto;
+}
+.tex-grain-dots {
+  --ub: 16px;
+  background-image:
+    var(--noise),
+    radial-gradient(var(--s-hi) calc(1.2 * var(--px)), transparent calc(1.8 * var(--px))),
+    linear-gradient(160deg, var(--p), var(--s));
+  background-blend-mode: multiply, normal, normal;
+  background-size: 220px 220px, var(--u) var(--u), auto;
+}
+.tex-check-fade {
+  --ub: 30px;
+  background-image:
+    conic-gradient(var(--s-soft) 25%, transparent 0 50%, var(--s-soft) 0 75%, transparent 0),
+    linear-gradient(135deg, var(--s) 0%, var(--p) 100%);
+  background-size: var(--u) var(--u), auto;
+}
+
+.tex-x-marks { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='M7 7l6 6M13 7l-6 6' fill='none' stroke='%23000' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round' /%3E%3C/svg%3E"); --mw: 20px; --mh: 20px; }
+.tex-diamonds-mini { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='M8 5l3 3-3 3-3-3z'/%3E%3C/svg%3E"); --mw: 16px; --mh: 16px; }
+.tex-dashes { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='16' viewBox='0 0 24 16'%3E%3Cpath d='M2 4h8M14 12h8' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' /%3E%3C/svg%3E"); --mw: 24px; --mh: 16px; }
+.tex-rain { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='M5 3l3 7M14 12l3 7' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' /%3E%3C/svg%3E"); --mw: 20px; --mh: 20px; }
+.tex-sprinkle { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Ccircle cx='8' cy='10' r='1.4'/%3E%3Cpath d='M30 8l6 3M50 22l-3 6M34 40l5-2M12 54l5 2' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' /%3E%3Ccircle cx='14' cy='34' r='1.4'/%3E%3Ccircle cx='52' cy='50' r='1.4'/%3E%3Ccircle cx='44' cy='8' r='1.1'/%3E%3C/svg%3E"); --mw: 60px; --mh: 60px; }
+.tex-corners { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M6 12V6h6' fill='none' stroke='%23000' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round' /%3E%3C/svg%3E"); --mw: 32px; --mh: 32px; }
+.tex-wiggle { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='8' viewBox='0 0 24 8'%3E%3Cpath d='M0 4q3-4 6 0t6 0t6 0t6 0' fill='none' stroke='%23000' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round' /%3E%3C/svg%3E"); --mw: 24px; --mh: 8px; }
+.tex-sparkle { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M12 5Q13 11 19 12Q13 13 12 19Q11 13 5 12Q11 11 12 5Z'/%3E%3C/svg%3E"); --mw: 24px; --mh: 24px; }
+.tex-rings-mini { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 18 18'%3E%3Ccircle cx='9' cy='9' r='4' fill='none' stroke='%23000' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round' /%3E%3C/svg%3E"); --mw: 18px; --mh: 18px; }
+.tex-tri-mini { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='18' viewBox='0 0 20 18'%3E%3Cpath d='M10 4l5 9H5z' fill='none' stroke='%23000' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round' /%3E%3C/svg%3E"); --mw: 20px; --mh: 18px; }
+.tex-basketweave { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect x='2' y='2' width='16' height='4' rx='1.5'/%3E%3Crect x='22' y='2' width='4' height='16' rx='1.5'/%3E%3Crect x='2' y='22' width='4' height='16' rx='1.5'/%3E%3Crect x='22' y='22' width='16' height='4' rx='1.5'/%3E%3Crect x='2' y='8' width='16' height='4' rx='1.5'/%3E%3Crect x='28' y='2' width='4' height='16' rx='1.5'/%3E%3Crect x='8' y='22' width='4' height='16' rx='1.5'/%3E%3Crect x='22' y='28' width='16' height='4' rx='1.5'/%3E%3Crect x='2' y='14' width='16' height='4' rx='1.5'/%3E%3Crect x='34' y='2' width='4' height='16' rx='1.5'/%3E%3Crect x='14' y='22' width='4' height='16' rx='1.5'/%3E%3Crect x='22' y='34' width='16' height='4' rx='1.5'/%3E%3C/svg%3E"); --mw: 40px; --mh: 40px; }
+.tex-flowers { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cg fill='none' stroke='%23000' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round' %3E%3Ccircle cx='20' cy='12' r='5'/%3E%3Ccircle cx='28' cy='20' r='5'/%3E%3Ccircle cx='20' cy='28' r='5'/%3E%3Ccircle cx='12' cy='20' r='5'/%3E%3C/g%3E%3Ccircle cx='20' cy='20' r='2'/%3E%3C/svg%3E"); --mw: 40px; --mh: 40px; }
+.tex-leaves { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cg fill-opacity='.95'%3E%3Cellipse cx='12' cy='12' rx='9' ry='4' transform='rotate(45 12 12)'/%3E%3Cellipse cx='30' cy='30' rx='9' ry='4' transform='rotate(45 30 30)'/%3E%3C/g%3E%3Cg fill-opacity='.45'%3E%3Cellipse cx='30' cy='12' rx='9' ry='4' transform='rotate(-45 30 12)'/%3E%3Cellipse cx='12' cy='30' rx='9' ry='4' transform='rotate(-45 12 30)'/%3E%3C/g%3E%3C/svg%3E"); --mw: 40px; --mh: 40px; }
+.tex-argyle { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cpath d='M20 4L36 20L20 36L4 20Z' fill-opacity='.9'/%3E%3Cg fill-opacity='.35'%3E%3Cpath d='M0 -16L16 0L0 16L-16 0Z'/%3E%3Cpath d='M40 -16L56 0L40 16L24 0Z'/%3E%3Cpath d='M0 24L16 40L0 56L-16 40Z'/%3E%3Cpath d='M40 24L56 40L40 56L24 40Z'/%3E%3C/g%3E%3C/svg%3E"); --mw: 40px; --mh: 40px; }
+.tex-bloom { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='52' viewBox='0 0 60 52'%3E%3Cg fill='none' stroke='%23000' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round' %3E%3Ccircle cx='-15' cy='-26' r='30'/%3E%3Ccircle cx='15' cy='-26' r='30'/%3E%3Ccircle cx='45' cy='-26' r='30'/%3E%3Ccircle cx='75' cy='-26' r='30'/%3E%3Ccircle cx='-30' cy='0' r='30'/%3E%3Ccircle cx='0' cy='0' r='30'/%3E%3Ccircle cx='30' cy='0' r='30'/%3E%3Ccircle cx='60' cy='0' r='30'/%3E%3Ccircle cx='-15' cy='26' r='30'/%3E%3Ccircle cx='15' cy='26' r='30'/%3E%3Ccircle cx='45' cy='26' r='30'/%3E%3Ccircle cx='75' cy='26' r='30'/%3E%3Ccircle cx='-30' cy='52' r='30'/%3E%3Ccircle cx='0' cy='52' r='30'/%3E%3Ccircle cx='30' cy='52' r='30'/%3E%3Ccircle cx='60' cy='52' r='30'/%3E%3C/g%3E%3C/svg%3E"); --mw: 60px; --mh: 52px; }
+.tex-hearts { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 36 36'%3E%3Cpath d='M18 28C6 20 8 8 18 14 28 8 30 20 18 28Z' fill-opacity='.95'/%3E%3C/svg%3E"); --mw: 36px; --mh: 36px; }
+.tex-crosses { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cpath d='M11 4h6v7h7v6h-7v7h-6v-7H4v-6h7z'/%3E%3C/svg%3E"); --mw: 28px; --mh: 28px; }
+.tex-bubbles { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cg fill='none' stroke='%23000' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round' %3E%3Ccircle cx='16' cy='18' r='10'/%3E%3Ccircle cx='52' cy='14' r='6'/%3E%3Ccircle cx='66' cy='50' r='12'/%3E%3Ccircle cx='24' cy='58' r='7'/%3E%3Ccircle cx='44' cy='40' r='4'/%3E%3Ccircle cx='8' cy='74' r='3'/%3E%3C/g%3E%3C/svg%3E"); --mw: 80px; --mh: 80px; }
+.tex-frames { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg fill='none' stroke='%23000' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round' %3E%3Crect x='1.5' y='1.5' width='29' height='29'/%3E%3Crect x='8' y='8' width='16' height='16'/%3E%3C/g%3E%3Crect x='14' y='14' width='4' height='4'/%3E%3C/svg%3E"); --mw: 32px; --mh: 32px; }
+.tex-ocean { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='24' viewBox='0 0 48 24'%3E%3Cpath d='M0 6Q12 -2 24 6T48 6M0 18Q12 10 24 18T48 18' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' /%3E%3C/svg%3E"); --mw: 48px; --mh: 24px; }
+.tex-zigline { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='10' viewBox='0 0 20 10'%3E%3Cpath d='M0 8L5 2L10 8L15 2L20 8' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' /%3E%3C/svg%3E"); --mw: 20px; --mh: 10px; }
+.tex-squiggle { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='14' viewBox='0 0 36 14'%3E%3Cpath d='M2 7q4-6 8 0t8 0t8 0t8 0' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' /%3E%3C/svg%3E"); --mw: 36px; --mh: 14px; }
+.tex-arrows { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M9 7l5 5-5 5' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' /%3E%3C/svg%3E"); --mw: 24px; --mh: 24px; }
+.tex-asterisks { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M16 9v14M10 12.5l12 7M22 12.5l-12 7' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' /%3E%3C/svg%3E"); --mw: 32px; --mh: 32px; }
+.tex-drops { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='34' viewBox='0 0 30 34'%3E%3Cpath d='M15 6C15 6 8 15 8 20a7 7 0 0 0 14 0C22 15 15 6 15 6Z'/%3E%3C/svg%3E"); --mw: 30px; --mh: 34px; }
+.tex-pills { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect x='5' y='15' width='18' height='8' rx='4' transform='rotate(45 14 19)'/%3E%3Crect x='18' y='22' width='18' height='8' rx='4' transform='rotate(-45 27 26)' fill-opacity='.5'/%3E%3C/svg%3E"); --mw: 40px; --mh: 40px; }
+.tex-domes { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='20' viewBox='0 0 40 20'%3E%3Cpath d='M0 20A20 20 0 0 1 40 20Z'/%3E%3C/svg%3E"); --mw: 40px; --mh: 20px; }
+.tex-blobs { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Ccircle cx='22' cy='24' r='16'/%3E%3Ccircle cx='46' cy='34' r='12'/%3E%3Ccircle cx='64' cy='64' r='14'/%3E%3Ccircle cx='20' cy='64' r='9'/%3E%3Ccircle cx='62' cy='14' r='6'/%3E%3C/svg%3E"); --mw: 80px; --mh: 80px; }
+.tex-petals { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cellipse cx='30' cy='18' rx='6' ry='12' transform='rotate(0 30 30)'/%3E%3Cellipse cx='30' cy='18' rx='6' ry='12' transform='rotate(60 30 30)'/%3E%3Cellipse cx='30' cy='18' rx='6' ry='12' transform='rotate(120 30 30)'/%3E%3Cellipse cx='30' cy='18' rx='6' ry='12' transform='rotate(180 30 30)'/%3E%3Cellipse cx='30' cy='18' rx='6' ry='12' transform='rotate(240 30 30)'/%3E%3Cellipse cx='30' cy='18' rx='6' ry='12' transform='rotate(300 30 30)'/%3E%3C/svg%3E"); --mw: 60px; --mh: 60px; }
+.tex-xs { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M8 8L24 24M24 8L8 24' fill='none' stroke='%23000' stroke-width='6' stroke-linecap='round' stroke-linejoin='round' /%3E%3C/svg%3E"); --mw: 32px; --mh: 32px; }
+.tex-crosses-bold { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Cpath d='M17 6h10v11h11v10H27v11H17V27H6V17h11z'/%3E%3C/svg%3E"); --mw: 44px; --mh: 44px; }
+.tex-lightning { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='56' viewBox='0 0 40 56'%3E%3Cpath d='M24 4L8 30h12L16 52 34 24H22z'/%3E%3C/svg%3E"); --mw: 40px; --mh: 56px; }
+.tex-hex-xl { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='70' viewBox='0 0 60 70'%3E%3Cpath d='M20 0L10 17.5L-10 17.5L-20 0L-10 -17.5L10 -17.5ZM80 0L70 17.5L50 17.5L40 0L50 -17.5L70 -17.5ZM50 17.5L40 35L20 35L10 17.5L20 0L40 0ZM20 35L10 52.5L-10 52.5L-20 35L-10 17.5L10 17.5ZM80 35L70 52.5L50 52.5L40 35L50 17.5L70 17.5ZM50 52.5L40 70L20 70L10 52.5L20 35L40 35ZM20 70L10 87.5L-10 87.5L-20 70L-10 52.5L10 52.5ZM80 70L70 87.5L50 87.5L40 70L50 52.5L70 52.5Z' fill='none' stroke='%23000' stroke-width='1.4' /%3E%3C/svg%3E"); --mw: 120px; --mh: 140px; }
+.tex-scales-xl { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cpath d='M-20 20A20 20 0 0 1 20 20M20 20A20 20 0 0 1 60 20M0 40A20 20 0 0 1 40 40' fill='none' stroke='%23000' stroke-width='1.6' /%3E%3C/svg%3E"); --mw: 80px; --mh: 80px; }
+.tex-lattice-xl { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cpath d='M14 0L28 14L14 28L0 14Z' fill='none' stroke='%23000' stroke-width='1.3' /%3E%3Cpath d='M14 10l4 4-4 4-4-4z'/%3E%3C/svg%3E"); --mw: 56px; --mh: 56px; }
+.tex-bricks-xl { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='20' viewBox='0 0 40 20'%3E%3Cpath d='M0 1H40M0 11H40M10 1V11M30 11V21' fill='none' stroke='%23000' stroke-width='1.5' /%3E%3C/svg%3E"); --mw: 80px; --mh: 40px; }
+.tex-waves-xl { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='16' viewBox='0 0 40 16'%3E%3Cpath d='M0 8Q10 0 20 8T40 8' fill='none' stroke='%23000' stroke-width='2.4' /%3E%3C/svg%3E"); --mw: 80px; --mh: 32px; }
+.tex-confetti-xl { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90' viewBox='0 0 90 90'%3E%3Ccircle cx='12' cy='14' r='4.5'/%3E%3Crect x='55' y='12' width='10' height='10' transform='rotate(28 60 17)'/%3E%3Cpath d='M28 58L38 76H18Z'/%3E%3Cpath d='M58 66q4-8 8 0t8 0' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round'/%3E%3Ccircle cx='78' cy='42' r='3'/%3E%3Ccircle cx='16' cy='42' r='6' fill='none' stroke='%23000' stroke-width='2' /%3E%3Cpath d='M44 30v8M40 34h8' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'/%3E%3Crect x='72' y='78' width='6' height='6' transform='rotate(-20 75 81)'/%3E%3C/svg%3E"); --mw: 150px; --mh: 150px; }
+.tex-plus-xl { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M12 8v8M8 12h8' fill='none' stroke='%23000' stroke-width='1.4' /%3E%3C/svg%3E"); --mw: 48px; --mh: 48px; }
+.tex-hearts-xl { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 36 36'%3E%3Cpath d='M18 28C6 20 8 8 18 14 28 8 30 20 18 28Z' fill-opacity='.95'/%3E%3C/svg%3E"); --mw: 64px; --mh: 64px; }
+.tex-circuit { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cpath d='M0 10h10v10h-10zM20 0h10v10h-10zM30 20h10v10h-10zM10 30h10v10h-10z' fill='none' stroke='%23000' stroke-width='1' /%3E%3Cpath d='M10 10l10 10M30 10l-10 10M10 30l10-10M30 30l-10-10' stroke='%23000' stroke-width='1' /%3E%3C/svg%3E"); --mw: 40px; --mh: 40px; }
+.tex-prism { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3E%3Cpath d='M15 0L30 10L15 20L0 10Z' fill='none' stroke='%23000' stroke-width='1.2' /%3E%3Cpath d='M15 10L20 15L15 20L10 15Z' fill='none' stroke='%23000' stroke-width='1.2' /%3E%3C/svg%3E"); --mw: 30px; --mh: 30px; }
+.tex-monolith { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='120' viewBox='0 0 80 120'%3E%3Crect x='20' y='20' width='40' height='80' rx='4' stroke='%23000' stroke-width='4' fill='none' /%3E%3Crect x='25' y='25' width='30' height='70' rx='2' stroke='%23000' stroke-width='2' fill='none' /%3E%3C/svg%3E"); --mw: 80px; --mh: 120px; }
+.tex-orb { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Ccircle cx='30' cy='30' r='20' stroke='%23000' stroke-width='4' fill='none' /%3E%3Ccircle cx='30' cy='30' r='10' stroke='%23000' stroke-width='2' fill='none' /%3E%3C/svg%3E"); --mw: 60px; --mh: 60px; }
+.tex-circuit-bold { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cpath d='M0 20h40v40H0zM60 0h40v40H60z' fill='none' stroke='%23000' stroke-width='4' /%3E%3Cpath d='M40 20l20 20M60 40l20 20' stroke='%23000' stroke-width='4' /%3E%3C/svg%3E"); --mw: 100px; --mh: 100px; }
+/* ==========================================================================
+   MORE SUBTLE
+   ========================================================================== */
+.tex-dots-tiny {
+  --ub: 8px;
+  background-image: radial-gradient(var(--s) calc(.8 * var(--px)), transparent calc(1.3 * var(--px)));
+  background-size: var(--u) var(--u);
+}
+.tex-pegboard {
+  --ub: 30px;
+  background-image: radial-gradient(var(--s) calc(2.2 * var(--px)), transparent calc(2.9 * var(--px)));
+  background-size: var(--u) var(--u);
+}
+.tex-isometric {
+  --ub: 26px;
+  background-image:
+    repeating-linear-gradient(30deg,  var(--s) 0 var(--px), transparent var(--px) var(--u)),
+    repeating-linear-gradient(150deg, var(--s) 0 var(--px), transparent var(--px) var(--u)),
+    repeating-linear-gradient(90deg,  var(--s) 0 var(--px), transparent var(--px) var(--u));
+}
+.tex-ruled-v {
+  --ub: 22px;
+  background-image: linear-gradient(90deg, var(--s) var(--px), transparent var(--px));
+  background-size: var(--u) 100%;
+}
+.tex-notebook {
+  --ub: 26px;
+  background-image:
+    linear-gradient(90deg, transparent calc(56 * var(--px)), var(--s-hi) 0 calc(57 * var(--px)), transparent 0),
+    linear-gradient(var(--s) var(--px), transparent var(--px));
+  background-size: auto, 100% var(--u);
+}
+.tex-dotgrid {
+  --ub: 24px;
+  background-image:
+    radial-gradient(var(--s-hi) calc(1.4 * var(--px)), transparent calc(2 * var(--px))),
+    linear-gradient(var(--s-soft) var(--px), transparent var(--px)),
+    linear-gradient(90deg, var(--s-soft) var(--px), transparent var(--px));
+  background-size: var(--u) var(--u);
+  background-position: calc(var(--u) / 2) calc(var(--u) / 2), 0 0, 0 0;
+}
+.tex-micro-checker {
+  --ub: 6px;
+  background-image: conic-gradient(var(--s) 25%, transparent 0 50%, var(--s) 0 75%, transparent 0);
+  background-size: var(--u) var(--u);
+}
+.tex-hairline-wide {
+  --ub: 44px;
+  background-image: repeating-linear-gradient(135deg, var(--s) 0 var(--px), transparent var(--px) calc(var(--u) / 2));
+}
+.tex-paper-fine   { background-image: var(--noise); background-blend-mode: multiply; background-size: 110px 110px; }
+.tex-paper-coarse { background-image: var(--noise); background-blend-mode: multiply; background-size: 440px 440px; }
+.tex-micro-dots { --ub: 6px; background-image: radial-gradient(var(--s) calc(.6 * var(--px)), transparent calc(1.1 * var(--px))); background-size: var(--u) var(--u); }
+.tex-scanline { --ub: 12px; background-image: linear-gradient(var(--s-soft) var(--px), transparent var(--px)); background-size: 100% var(--u); }
+.tex-static { background-image: var(--noise); background-blend-mode: multiply; background-size: 40px 40px; opacity: 0.6; }
+.tex-silk { --ub: 40px; background-image: repeating-linear-gradient(45deg, var(--s-soft) 0 var(--px), transparent var(--px) calc(var(--u) / 2)); opacity: 0.5; }
+.tex-etched { --ub: 14px; background-image: repeating-linear-gradient(90deg, var(--s-soft) 0 var(--px), transparent var(--px) calc(var(--u) / 2)); }
+.tex-carbon { --ub: 10px; background-image: linear-gradient(45deg, var(--s-soft) 25%, transparent 25%, transparent 75%, var(--s-soft) 75%), linear-gradient(45deg, var(--s-soft) 25%, transparent 25%, transparent 75%, var(--s-soft) 75%); background-size: var(--u) var(--u); background-position: 0 0, var(--u) var(--u); }
+
+/* ==========================================================================
+   MORE MEDIUM
+   ========================================================================== */
+.tex-awning {
+  --ub: 22px;
+  background-image: repeating-linear-gradient(90deg, var(--s) 0 var(--u), transparent 0 calc(2 * var(--u)));
+}
+.tex-plaid {
+  --ub: 14px;
+  background-image:
+    repeating-linear-gradient(0deg,  var(--s-soft) 0 var(--u), transparent 0 calc(3 * var(--u))),
+    repeating-linear-gradient(90deg, var(--s-soft) 0 var(--u), transparent 0 calc(3 * var(--u))),
+    repeating-linear-gradient(0deg,  transparent 0 calc(var(--u) * 1.8), var(--s) 0 calc(var(--u) * 1.8 + var(--px)), transparent 0 calc(3 * var(--u))),
+    repeating-linear-gradient(90deg, transparent 0 calc(var(--u) * 1.8), var(--s) 0 calc(var(--u) * 1.8 + var(--px)), transparent 0 calc(3 * var(--u)));
+}
+.tex-ticking {
+  --ub: 8px;
+  background-image: repeating-linear-gradient(90deg,
+    var(--s) 0 calc(2 * var(--px)), transparent 0 var(--u),
+    var(--s) 0 calc(var(--u) + 6 * var(--px)), transparent 0 calc(2 * var(--u) + 6 * var(--px)));
+}
+.tex-fan {
+  background-image: repeating-conic-gradient(from 0deg at 0 0, var(--s) 0 5deg, transparent 0 10deg);
+}
+.tex-ripples-corner {
+  --ub: 60px;
+  background-image: repeating-radial-gradient(circle at 0 0, var(--s) 0 calc(var(--u) * .16), transparent 0 calc(var(--u) * .33));
+}
+.tex-polka-duo {
+  --ub: 52px;
+  background-image:
+    radial-gradient(var(--s) calc(var(--u) * .16), transparent calc(var(--u) * .17)),
+    radial-gradient(var(--s3) calc(var(--u) * .07), transparent calc(var(--u) * .08));
+  background-size: var(--u) var(--u);
+  background-position: 0 0, calc(var(--u) / 2) calc(var(--u) / 2);
+}
+.tex-rings {
+  --ub: 38px;
+  background-image: radial-gradient(circle at 50% 50%, transparent calc(var(--u) * .26), var(--s) calc(var(--u) * .27) calc(var(--u) * .38), transparent calc(var(--u) * .39));
+  background-size: var(--u) var(--u);
+}
+.tex-bullets {
+  --ub: 44px;
+  background-image: radial-gradient(circle, var(--s) 0 calc(var(--u) * .08), transparent calc(var(--u) * .09) calc(var(--u) * .18), var(--s) calc(var(--u) * .19) calc(var(--u) * .26), transparent calc(var(--u) * .27));
+  background-size: var(--u) var(--u);
+}
+.tex-twin-lines {
+  --ub: 18px;
+  background-image: repeating-linear-gradient(45deg,
+    var(--s) 0 var(--px), transparent 0 calc(3 * var(--px)), var(--s) 0 calc(4 * var(--px)), transparent 0 var(--u));
+}
+.tex-plaid-bold { --ub: 30px; background-image: repeating-linear-gradient(0deg, var(--s) 0 var(--u), transparent 0 calc(2 * var(--u))), repeating-linear-gradient(90deg, var(--s) 0 var(--u), transparent 0 calc(2 * var(--u))); }
+.tex-chevron-alt { --ub: 20px; background-image: repeating-linear-gradient(45deg, var(--s) 0 var(--px), transparent var(--px) calc(var(--u) / 4), var(--s) calc(var(--u) / 4) calc(var(--u) / 4 + var(--px)), transparent 0 var(--u)); }
+.tex-diamond-grid { --ub: 24px; background-image: linear-gradient(45deg, var(--s) var(--px), transparent var(--px}), linear-gradient(-45deg, var(--s) var(--px), transparent var(--px)); background-size: calc(var(--u) * .7) calc(var(--u) * .7); }
+.tex-stripe-wave { --ub: 30px; background-image: repeating-linear-gradient(0deg, var(--s) 0 var(--px), transparent var(--px) var(--u)); mask-image: radial-gradient(circle at 50% 50%, black, transparent); }
+.tex-circuit { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cpath d='M0 10h10v10h-10zM20 0h10v10h-10zM30 20h10v10h-10zM10 30h10v10h-10z' fill='none' stroke='%23000' stroke-width='1' /%3E%3Cpath d='M10 10l10 10M30 10l-10 10M10 30l10-10M30 30l-10-10' stroke='%23000' stroke-width='1' /%3E%3C/svg%3E"); --mw: 40px; --mh: 40px; }
+.tex-prism { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3E%3Cpath d='M15 0L30 10L15 20L0 10Z' fill='none' stroke='%23000' stroke-width='1.2' /%3E%3Cpath d='M15 10L20 15L15 20L10 15Z' fill='none' stroke='%23000' stroke-width='1.2' /%3E%3C/svg%3E"); --mw: 30px; --mh: 30px; }
+.tex-nest { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cpath d='M20 0C10 0 0 10 0 20C0 30 10 40 20 40C30 40 40 30 40 20C40 10 30 0 20 0' fill='none' stroke='%23000' stroke-width='1.5' /%3E%3Ccircle cx='20' cy='20' r='10' stroke='%23000' stroke-width='1.5' fill='none' /%3E%3C/svg%3E"); --mw: 40px; --mh: 40px; }
+
+/* ==========================================================================
+   MORE BOLD
+   ========================================================================== */
+.tex-curtain {
+  --ub: 26px;
+  background-image: repeating-linear-gradient(90deg, var(--s) 0 var(--u), transparent 0 calc(2 * var(--u)));
+}
+.tex-deck {
+  --ub: 22px;
+  background-image: repeating-linear-gradient(0deg, var(--s) 0 var(--u), transparent 0 calc(2 * var(--u)));
+}
+.tex-targets {
+  --ub: 72px;
+  background-image: radial-gradient(circle, var(--s) 0 calc(var(--u) * .07), transparent calc(var(--u) * .08) calc(var(--u) * .14), var(--s) calc(var(--u) * .15) calc(var(--u) * .22), transparent calc(var(--u) * .23) calc(var(--u) * .30), var(--s) calc(var(--u) * .31) calc(var(--u) * .38), transparent calc(var(--u) * .39));
+  background-size: var(--u) var(--u);
+}
+.tex-pinwheels {
+  --ub: 64px;
+  background-image: repeating-conic-gradient(var(--s) 0 15deg, transparent 0 30deg);
+  background-size: var(--u) var(--u);
+}
+.tex-dots-xxl {
+  --ub: 84px;
+  background-image: radial-gradient(var(--s) calc(var(--u) * .3), transparent calc(var(--u) * .305));
+  background-size: var(--u) var(--u);
+}
+.tex-candy {
+  --ub: 40px;
+  background-image: repeating-linear-gradient(45deg,
+    var(--s) 0 calc(var(--u) * .25), transparent 0 calc(var(--u) * .5), var(--s3) 0 calc(var(--u) * .75), transparent 0 var(--u));
+}
+.tex-tweed {
+  --ub: 40px;
+  background-image:
+    repeating-linear-gradient(45deg,  var(--s-soft) 0 calc(var(--u) * .25), transparent 0 calc(var(--u) * .5)),
+    repeating-linear-gradient(-45deg, var(--s-soft) 0 calc(var(--u) * .25), transparent 0 calc(var(--u) * .5));
+}
+.tex-duo-board {
+  --ub: 56px;
+  background-image: conic-gradient(var(--s) 25%, var(--s3) 0 50%, var(--s) 0 75%, var(--s3) 0);
+  background-size: var(--u) var(--u);
+}
+.tex-duo-bands {
+  --ub: 36px;
+  background-image: repeating-linear-gradient(45deg, var(--s) 0 calc(var(--u) * .5), var(--s3) 0 var(--u));
+}
+.tex-pie {
+  background-image: conic-gradient(var(--s) 0 60deg, var(--s3) 0 120deg, transparent 0 180deg, var(--s) 0 240deg, var(--s3) 0 300deg, transparent 0);
+}
+.tex-corner-rings {
+  --ub: 54px;
+  background-image: repeating-radial-gradient(circle at 100% 100%, var(--s) 0 calc(var(--u) * .33), transparent 0 calc(var(--u) * .66));
+}
+.tex-macro-dots { --ub: 120px; background-image: radial-gradient(var(--s) calc(var(--u) * .2), transparent calc(var(--u) * .21)); background-size: var(--u) var(--u); }
+.tex-beam { --ub: 80px; background-image: repeating-linear-gradient(120deg, var(--s) 0 var(--px), transparent var(--px) calc(var(--u) / 3)); }
+.tex-monolith { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='120' viewBox='0 0 80 120'%3E%3Crect x='20' y='20' width='40' height='80' rx='4' stroke='%23000' stroke-width='4' fill='none' /%3E%3Crect x='25' y='25' width='30' height='70' rx='2' stroke='%23000' stroke-width='2' fill='none' /%3E%3C/svg%3E"); --mw: 80px; --mh: 120px; }
+.tex-orb { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Ccircle cx='30' cy='30' r='20' stroke='%23000' stroke-width='4' fill='none' /%3E%3Ccircle cx='30' cy='30' r='10' stroke='%23000' stroke-width='2' fill='none' /%3E%3C/svg%3E"); --mw: 60px; --mh: 60px; }
+.tex-zigzag-bold { --ub: 60px; background-image: linear-gradient(135deg, var(--s) 25%, transparent 25%), linear-gradient(225deg, var(--s) 25%, transparent 25%), linear-gradient(315deg, var(--s) 25%, transparent 25%), linear-gradient(45deg,  var(--s) 25%, transparent 25%); background-size: calc(2 * var(--u)) calc(2 * var(--u)); }
+.tex-circuit-bold { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cpath d='M0 20h40v40H0zM60 0h40v40H60z' fill='none' stroke='%23000' stroke-width='4' /%3E%3Cpath d='M40 20l20 20M60 40l20 20' stroke='%23000' stroke-width='4' /%3E%3C/svg%3E"); --mw: 100px; --mh: 100px; }
+
+/* ==========================================================================
+   MORE BLENDS (all stacks list the noise first, so blend modes are explicit)
+   ========================================================================== */
+.tex-mesh-grain {
+  background-image:
+    var(--noise),
+    radial-gradient(at 0% 0%,     var(--s-hi) 0, transparent 55%),
+    radial-gradient(at 100% 0%,   var(--s3)   0, transparent 55%),
+    radial-gradient(at 100% 100%, var(--s)    0, transparent 55%),
+    radial-gradient(at 0% 100%,   var(--sc)   0, transparent 55%);
+  background-blend-mode: multiply, normal, normal, normal, normal;
+  background-size: 220px 220px, auto, auto, auto, auto;
+}
+.tex-aurora-dots {
+  --ub: 16px;
+  background-image:
+    radial-gradient(var(--s-hi) calc(1.1 * var(--px)), transparent calc(1.7 * var(--px))),
+    radial-gradient(60% 75% at 12% 15%, var(--sc), transparent 70%),
+    radial-gradient(55% 70% at 90% 20%, var(--s), transparent 70%),
+    radial-gradient(70% 70% at 55% 105%, var(--s3), transparent 70%);
+  background-size: var(--u) var(--u), auto, auto, auto;
+}
+.tex-peach-fade {
+  background-image: var(--noise), linear-gradient(180deg, var(--p) 0%, var(--s3) 100%);
+  background-blend-mode: multiply, normal;
+  background-size: 220px 220px, auto;
+}
+.tex-sky {
+  background-image:
+    radial-gradient(38% 22% at 24% 30%, rgb(255 255 255 / .9), transparent 72%),
+    radial-gradient(34% 18% at 72% 46%, rgb(255 255 255 / .8), transparent 72%),
+    radial-gradient(30% 16% at 40% 70%, rgb(255 255 255 / .7), transparent 72%),
+    linear-gradient(180deg, var(--s3) 0%, var(--p) 100%);
+}
+.tex-horizon {
+  background-image: var(--noise), linear-gradient(180deg, var(--p) 0 55%, var(--s) 0 100%);
+  background-blend-mode: multiply, normal;
+  background-size: 220px 220px, auto;
+}
+.tex-stripe-fade {
+  --ub: 20px;
+  background-image:
+    linear-gradient(180deg, transparent 0%, var(--p) 88%),
+    repeating-linear-gradient(90deg, var(--s) 0 calc(var(--u) * .5), transparent 0 var(--u));
+}
+.tex-radial-burst {
+  --ub: 40px;
+  background-image:
+    radial-gradient(circle at 50% 50%, var(--p) 0 8%, transparent 62%),
+    repeating-radial-gradient(circle at 50% 50%, var(--s) 0 calc(var(--u) * .25), transparent 0 calc(var(--u) * .5));
+}
+.tex-glass {
+  background-image:
+    linear-gradient(115deg, rgb(255 255 255 / .7) 0 18%, transparent 18% 40%, rgb(255 255 255 / .45) 40% 52%, transparent 52%),
+    linear-gradient(135deg, var(--s), var(--p));
+}
+.tex-candy-glow {
+  --ub: 36px;
+  background-image:
+    radial-gradient(circle at 50% 120%, rgb(255 255 255 / .95), transparent 65%),
+    repeating-linear-gradient(45deg, var(--s) 0 calc(var(--u) * .5), var(--s3) 0 var(--u));
+}
+.tex-neon-grid {
+  --ub: 28px;
+  background-image:
+    radial-gradient(60% 55% at 50% 100%, var(--s-hi), transparent),
+    linear-gradient(var(--s) var(--px), transparent var(--px)),
+    linear-gradient(90deg, var(--s) var(--px), transparent var(--px)),
+    linear-gradient(180deg, var(--p) 30%, var(--s3) 100%);
+  background-size: auto, var(--u) var(--u), var(--u) var(--u), auto;
+}
+.tex-conic-sweep {
+  background-image: var(--noise), conic-gradient(from 0deg at 50% 50%, var(--p), var(--s), var(--s3), var(--s), var(--p));
+  background-blend-mode: multiply, normal;
+  background-size: 220px 220px, auto;
+}
+.tex-ribbon {
+  background-image: linear-gradient(135deg, var(--s) 0%, var(--p) 35%, var(--s3) 70%, var(--p) 100%);
+}
+.tex-dots-glow {
+  --ub: 16px;
+  background-image:
+    radial-gradient(var(--s-hi) calc(1.2 * var(--px)), transparent calc(1.8 * var(--px))),
+    radial-gradient(circle at 50% 50%, rgb(255 255 255 / .9), transparent 70%),
+    linear-gradient(135deg, var(--p), var(--s));
+  background-size: var(--u) var(--u), auto, auto;
+}
+.tex-checker-glow {
+  --ub: 26px;
+  background-image:
+    conic-gradient(var(--s-soft) 25%, transparent 0 50%, var(--s-soft) 0 75%, transparent 0),
+    radial-gradient(circle at 50% 50%, rgb(255 255 255 / .95), transparent 75%);
+  background-size: var(--u) var(--u), auto;
+}
+.tex-lines-glow {
+  --ub: 22px;
+  background-image:
+    linear-gradient(var(--s) var(--px), transparent var(--px)),
+    radial-gradient(70% 90% at 50% 40%, rgb(255 255 255 / .9), var(--p) 85%);
+  background-size: 100% var(--u), auto;
+}
+.tex-hatch-vignette {
+  --ub: 18px;
+  background-image:
+    radial-gradient(circle at 50% 50%, var(--p) 0 25%, transparent 78%),
+    repeating-linear-gradient(45deg,  var(--s) 0 var(--px), transparent var(--px) calc(var(--u) / 2)),
+    repeating-linear-gradient(-45deg, var(--s) 0 var(--px), transparent var(--px) calc(var(--u) / 2));
+}
+.tex-strata {
+  background-image: linear-gradient(180deg, var(--p) 0 25%, var(--s) 0 50%, var(--s3) 0 75%, var(--s-hi) 0);
+}
+.tex-rays-fall {
+  background-image:
+    linear-gradient(180deg, transparent 35%, var(--p) 100%),
+    repeating-conic-gradient(from 0deg at 50% 0, var(--s) 0 5deg, transparent 0 10deg);
+}
+.tex-bokeh {
+  background-image:
+    radial-gradient(circle at 18% 28%, var(--s-soft) 0 7%, transparent 7.6%),
+    radial-gradient(circle at 70% 22%, var(--s-soft) 0 11%, transparent 11.6%),
+    radial-gradient(circle at 46% 62%, var(--s-soft) 0 5%, transparent 5.6%),
+    radial-gradient(circle at 84% 70%, var(--s-soft) 0 9%, transparent 9.6%),
+    radial-gradient(circle at 24% 82%, var(--s-soft) 0 8%, transparent 8.6%),
+    linear-gradient(160deg, var(--p), var(--sc));
+}
+.tex-sprinkles {
+  --ub: 120px;
+  background-image:
+    radial-gradient(circle at 12% 18%, var(--s-hi) 0 3px, transparent 3.6px),
+    radial-gradient(circle at 58% 12%, var(--s3) 0 4px, transparent 4.6px),
+    radial-gradient(circle at 86% 36%, var(--s-hi) 0 2.5px, transparent 3.1px),
+    radial-gradient(circle at 34% 54%, var(--s) 0 4.5px, transparent 5.1px),
+    radial-gradient(circle at 72% 70%, var(--s3) 0 3px, transparent 3.6px),
+    radial-gradient(circle at 16% 88%, var(--s) 0 3.5px, transparent 4.1px),
+    radial-gradient(circle at 92% 92%, var(--s-hi) 0 2.5px, transparent 3.1px);
+  background-size: var(--u) var(--u);
+}
+.tex-linen-glow {
+  background-image:
+    repeating-linear-gradient(0deg,  var(--s-soft) 0 var(--px), transparent var(--px) calc(3 * var(--px))),
+    repeating-linear-gradient(90deg, var(--s-soft) 0 var(--px), transparent var(--px) calc(3 * var(--px))),
+    radial-gradient(70% 80% at 50% 0%, rgb(255 255 255 / .9), transparent 75%);
+}
+.tex-grain-vignette {
+  background-image: var(--noise), radial-gradient(ellipse at 50% 40%, var(--p) 0, var(--s) 130%);
+  background-blend-mode: multiply, normal;
+  background-size: 220px 220px, auto;
+}
+.tex-duotone {
+  background-image: var(--noise), linear-gradient(135deg, var(--s), var(--s3));
+  background-blend-mode: multiply, normal;
+  background-size: 220px 220px, auto;
+}
+.tex-twin-glow {
+  background-image:
+    radial-gradient(45% 70% at 12% 50%, var(--sc), transparent),
+    radial-gradient(45% 70% at 88% 50%, var(--s3), transparent);
+}
+.tex-iris {
+  background-image:
+    var(--noise),
+    radial-gradient(circle at 50% 50%, rgb(255 255 255 / .95) 0, transparent 42%),
+    conic-gradient(from 0deg at 50% 50%, var(--s), var(--s3), var(--sc), var(--s-hi), var(--s));
+  background-blend-mode: multiply, normal, normal;
+  background-size: 220px 220px, auto, auto;
+}
+.tex-lava {
+  background-image:
+    var(--noise),
+    radial-gradient(50% 60% at 18% 85%, var(--s-hi), transparent 70%),
+    radial-gradient(50% 55% at 85% 72%, var(--s3), transparent 70%),
+    radial-gradient(55% 50% at 50% 15%, var(--sc), transparent 70%);
+  background-blend-mode: multiply, normal, normal, normal;
+  background-size: 220px 220px, auto, auto, auto;
+}
+.tex-frost {
+  --ub: 30px;
+  background-image:
+    var(--noise),
+    linear-gradient(var(--s-soft) var(--px), transparent var(--px)),
+    linear-gradient(90deg, var(--s-soft) var(--px), transparent var(--px)),
+    linear-gradient(135deg, rgb(255 255 255 / .95), var(--p) 60%, var(--s));
+  background-blend-mode: multiply, normal, normal, normal;
+  background-size: 220px 220px, var(--u) var(--u), var(--u) var(--u), auto;
+}
+.tex-tropic {
+  --ub: 44px;
+  background-image:
+    linear-gradient(180deg, rgb(255 255 255 / .65), transparent 60%),
+    repeating-linear-gradient(135deg, var(--s) 0 calc(var(--u) * .5), var(--s3) 0 var(--u));
+}
+.tex-stripes-grain {
+  --ub: 30px;
+  background-image:
+    var(--noise),
+    repeating-linear-gradient(45deg, var(--s) 0 calc(var(--u) * .25), transparent 0 calc(var(--u) * .5));
+  background-blend-mode: multiply, normal;
+  background-size: 220px 220px, auto;
+}
+.tex-grid-mesh {
+  --ub: 26px;
+  background-image:
+    linear-gradient(var(--s-hi) var(--px), transparent var(--px)),
+    linear-gradient(90deg, var(--s-hi) var(--px), transparent var(--px)),
+    radial-gradient(at 0% 0%,   var(--sc) 0, transparent 60%),
+    radial-gradient(at 100% 100%, var(--s3) 0, transparent 60%);
+  background-size: var(--u) var(--u), var(--u) var(--u), auto, auto;
+}
+
+
+/* ---------- Reduced fuss for printing / forced colors ---------- */
+@media (forced-colors: active) {
+  .tex, .tex::before { background-image: none; -webkit-mask: none; mask: none; }
+}
